@@ -2,7 +2,7 @@ import requests
 import boto3
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ── config ────────────────────────────────────────────────
 BUCKET = "gamepulse-datalake"
@@ -44,7 +44,7 @@ def fetch_league(league_id: str, league_name: str) -> list[dict]:
         for e in events:
             row = {col: e.get(col) for col in KEEP_COLUMNS}
             row["league_name"] = league_name
-            row["ingested_at"] = datetime.utcnow().isoformat()
+            row["ingested_at"] = datetime.now(timezone.utc).isoformat()
             cleaned.append(row)
         logger.info(f"{league_name}: {len(cleaned)} matches fetched")
         return cleaned
@@ -64,7 +64,7 @@ def fetch_all() -> list[dict]:
 # ── s3 ────────────────────────────────────────────────────
 def save_to_s3(events: list[dict]) -> str:
     s3 = boto3.client("s3", region_name=REGION)
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     key = f"raw/matches/date={today}/matches.json"
 
     s3.put_object(
@@ -74,7 +74,7 @@ def save_to_s3(events: list[dict]) -> str:
         ContentType="application/json",
         Metadata={
             "record_count": str(len(events)),
-            "ingested_at": datetime.utcnow().isoformat(),
+            "ingested_at": datetime.now(timezone.utc).isoformat(),
         }
     )
     logger.info(f"Saved to s3://{BUCKET}/{key}")
@@ -93,9 +93,4 @@ def handler(event=None, context=None):
 
 if __name__ == "__main__":
     result = handler()
-    print(result)
-
-
-
-
-              
+    logger.info(result)

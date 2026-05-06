@@ -1,4 +1,4 @@
-name: Deploy to Lambda
+name: Deploy to Lambda and Glue
 
 on:
   push:
@@ -44,3 +44,8 @@ jobs:
             --function-name gamepulse-ingestion \
             --zip-file fileb://gamepulse_lambda.zip \
             --region ap-south-1
+
+      - name: Upload Glue script to S3
+        run: |
+          aws s3 cp src/transform/clean.py \
+            s3://gamepulse-datalake/scripts/clean.py
