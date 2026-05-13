@@ -1,12 +1,17 @@
+import os
 import requests
 import boto3
 import json
 import logging
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+# loads .env locally, ignored in Lambda (uses env vars instead)
+load_dotenv()
 
 # ── config ────────────────────────────────────────────────
-BUCKET = "gamepulse-datalake"
-REGION = "ap-south-1"
+BUCKET = os.environ["BUCKET_NAME"]
+REGION = os.environ["REGION_NAME"]
 BASE_URL = "https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php"
 
 LEAGUES = {
@@ -66,7 +71,6 @@ def save_to_s3(events: list[dict]) -> str:
     s3 = boto3.client("s3", region_name=REGION)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     key = f"raw/matches/date={today}/matches.json"
-
     s3.put_object(
         Bucket=BUCKET,
         Key=key,
@@ -83,12 +87,16 @@ def save_to_s3(events: list[dict]) -> str:
 
 # ── lambda handler ─────────────────────────────────────────
 def handler(event=None, context=None):
-    events = fetch_all()
-    if not events:
-        logger.warning("No data fetched — skipping S3 upload")
-        return {"status": "no_data"}
-    key = save_to_s3(events)
-    return {"status": "success", "s3_key": key, "record_count": len(events)}
+    try:
+        events = fetch_all()
+        if not events:
+            logger.warning("No data fetched — skipping S3 upload")
+            return {"status": "no_data"}
+        key = save_to_s3(events)
+        return {"status": "success", "s3_key": key, "record_count": len(events)}
+    except Exception as e:
+        logger.exception(f"Pipeline failed: {e}")
+        raise
 
 
 if __name__ == "__main__":

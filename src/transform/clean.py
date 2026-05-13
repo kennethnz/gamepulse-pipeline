@@ -1,4 +1,5 @@
 import sys
+import os
 import boto3
 import logging
 from datetime import datetime, timezone
@@ -17,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── args & context ─────────────────────────────────────────
-args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+args = getResolvedOptions(sys.argv, ["JOB_NAME", "BUCKET_NAME", "REGION_NAME"])
 sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
@@ -25,8 +26,8 @@ job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
 # ── config ─────────────────────────────────────────────────
-BUCKET = "gamepulse-datalake"
-REGION = "ap-south-1"
+BUCKET = args["BUCKET_NAME"]
+REGION = args["REGION_NAME"]
 today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 RAW_PATH = f"s3://{BUCKET}/raw/matches/date={today}/matches.json"
 CURATED_PATH = f"s3://{BUCKET}/curated/matches/"
