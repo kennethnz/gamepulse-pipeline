@@ -4,10 +4,11 @@ import boto3
 import json
 import logging
 from datetime import datetime, timezone
-from dotenv import load_dotenv
+#if testing in local env
+# from dotenv import load_dotenv 
 
 # loads .env locally, ignored in Lambda (uses env vars instead)
-load_dotenv()
+# load_dotenv()
 
 # ── config ────────────────────────────────────────────────
 BUCKET = os.environ["BUCKET_NAME"]
